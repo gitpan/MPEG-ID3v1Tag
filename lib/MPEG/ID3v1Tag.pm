@@ -2,7 +2,7 @@ package MPEG::ID3v1Tag;
 require 5.004;
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# $Id: ID3v1Tag.pm,v 1.4 1999/12/29 23:19:11 sander Exp $
+# $Id: ID3v1Tag.pm,v 2.6 2000/01/28 03:01:49 sander Exp $
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 use strict;
@@ -15,10 +15,10 @@ require Exporter;
 @EXPORT = qw();
 @EXPORT_OK = qw();
 
-$MPEG::ID3v1Tag::VERSION = do { my @r = (q$Revision: 1.4 $ =~ /\d+/g); sprintf "%d."."%02d" x $#r, @r }; # must be all one line, for MakeMaker
+$MPEG::ID3v1Tag::VERSION = do { my @r = (q$Revision: 2.6 $ =~ /\d+/g); $r[0]--;sprintf "%d."."%02d" x $#r, @r }; # must be all one line, for MakeMaker
 
 ## Revision and debuging
-$MPEG::ID3v1Tag::revision = '$Id: ID3v1Tag.pm,v 1.4 1999/12/29 23:19:11 sander Exp $ ';
+$MPEG::ID3v1Tag::revision = '$Id: ID3v1Tag.pm,v 2.6 2000/01/28 03:01:49 sander Exp $ ';
 my $DEBUG = 0;
 
 ## SOME USEFULL CONSTANTS.
@@ -27,7 +27,7 @@ my $DEBUG = 0;
 ##     http://www.id3.org/
 my $DefaultClass = 'MPEG::ID3v1Tag';
 
-my @id3_genres_array = (
+@MPEG::ID3v1Tag::id3_genres_array = (
 			'Blues', 'Classic Rock', 'Country', 'Dance',
 			'Disco', 'Funk', 'Grunge', 'Hip-Hop', 'Jazz',
 			'Metal', 'New Age', 'Oldies', 'Other', 'Pop', 'R&B',
@@ -65,7 +65,7 @@ my @id3_genres_array = (
 		       );
 
 my $c = 0;
-my %id3_genres = map {$_ => $c++ } @id3_genres_array;
+%MPEG::ID3v1Tag::id3_genres = map {$_ => $c++ } @MPEG::ID3v1Tag::id3_genres_array;
 
 ## A silly print routine useful for debugging.
 sub debug {
@@ -80,10 +80,10 @@ sub new {
   $readonly = 0 unless defined($readonly);
   $self->{FileHandle} = new IO::File;
   if( -w $mp3_file || !$readonly)  {
-    $self->{FileHandle}->open("+<${mp3_file}") or croak("Can't open ${mp3_file}: $!");
+    $self->{FileHandle}->open("+<${mp3_file}") or (warn("Can't open ${mp3_file}: $!") and return undef);
     $self->{readonly} = 0;
   } else {
-    $self->{FileHandle}->open("<${mp3_file}") or croak("Can't open ${mp3_file}: $!");
+    $self->{FileHandle}->open("<${mp3_file}") or (warn("Can't open ${mp3_file}: $!") and return undef);
     $self->{readonly} = 1;
   }
   $self->{filename} = $mp3_file;
@@ -103,7 +103,7 @@ sub DESTROY {
 ## Generic routine to see if this MPEG has an ID3v1Tag
 sub got_tag {
   my($self) = @_;
-  return (find_tag_id3v1())?1:0;
+  return ($self->find_tag_id3v1())?1:0;
 }
 
 ## Some generic initialization
@@ -125,9 +125,9 @@ sub print_genre_chart {
   my($self,$columns) = @_;
   $columns = 3 if ($columns <=0);
   my $i = 0;
-  for(my $i = 0;$i < $#id3_genres_array; $i += $columns) {
+  for(my $i = 0;$i < $#MPEG::ID3v1Tag::id3_genres_array; $i += $columns) {
     for(my $j = 0; $j < $columns; $j++) {
-      printf("%2s. %-20s",$i + $j, $id3_genres_array[$i + $j]);
+      printf("%2s. %-20s",$i + $j, $MPEG::ID3v1Tag::id3_genres_array[$i + $j]);
     }
     print "\n";
   }
@@ -152,16 +152,17 @@ sub decode_tag_id3v1 {
   my($self,$buffer) = @_;
   ## Unpack the Audio ID3v1
   (undef, @{$self->{tag}}{qw/title artist album year comment genre_num/}) =
-    unpack('a3a30a30a30a4a30c1', $buffer);
+    unpack('a3a30a30a30a4a30C1', $buffer);
   
   ## Clean em up a bit
   foreach (sort keys %{$self->{tag}}) {
     if(defined($self->{tag}{$_})) {
       $self->{tag}{$_} =~ s/\s+$//;
+      $self->{tag}{$_} =~ s/\0.*$//;
       $self->debug(sprintf("ID3v1: %s = ", $_ ) . $self->{tag}{$_});
     }
   }
-  $self->{tag}{'genre'} = $id3_genres_array[$self->{tag}{'genre_num'}];
+  $self->{tag}{'genre'} = $MPEG::ID3v1Tag::id3_genres_array[$self->{tag}{'genre_num'}];
   $self->debug(sprintf("ID3v1: %s = ", 'genre' ) . $self->{tag}{'genre'});
 }
 
@@ -178,7 +179,7 @@ sub encode_tag_id3v1 {
     $self->{FileHandle}->seek(-128,SEEK_END); # Find the last 128 bytes
   }
   $self->{tag}{'genre_num'} = 255 if(!defined($self->{tag}{'genre_num'}));
-  $self->{FileHandle}->print(pack("A3A30A30A30A4A30C1",
+  $self->{FileHandle}->print(pack("a3a30a30a30a4a30C1", 
 			  'TAG',
 			  $self->{tag}{'title'},
 			  $self->{tag}{'artist'},
@@ -214,7 +215,7 @@ sub print_tag {
       print(sprintf("%-10s = ",$_ ) . $self->{tag}{$_} . "\n");
     }
   } else {
-    print "No ID3 Tag Found\n";
+    print "No ID3v1 Tag Found\n";
   }
 }
 
@@ -270,8 +271,8 @@ sub set_comment {
 
 sub set_genre {
   my($self,$genre) = @_;
-  my $genre_num = $id3_genres{$genre};
-  if($genre_num >= 0 && $genre_num <= $#id3_genres_array) {
+  my $genre_num = $MPEG::ID3v1Tag::id3_genres{$genre};
+  if($genre_num >= 0 && $genre_num <= $#MPEG::ID3v1Tag::id3_genres_array) {
     $self->{tag}{'genre'} = $genre;
     $self->{tag}{'genre_num'} = $genre_num;
   }
@@ -284,9 +285,9 @@ sub get_genre {
 
 sub set_genre_num {
   my($self,$genre_num) = @_;
-  if( $genre_num >= 0 && $genre_num <= $#id3_genres_array) {
+  if( $genre_num >= 0 && $genre_num <= $#MPEG::ID3v1Tag::id3_genres_array) {
     $self->{tag}{'genre_num'} = $genre_num;
-    $self->{tag}{'genre'} = $id3_genres_array[$genre_num];
+    $self->{tag}{'genre'} = $MPEG::ID3v1Tag::id3_genres_array[$genre_num];
     return 1;
   }
   return 0;
@@ -312,7 +313,7 @@ __END__
 
 =head1 NAME
 
-B<MPEG::ID3v1Tag> - Retrieves/Sets ID3 Tag from an Audio MPEG.
+MPEG::ID3v1Tag - Retrieves/Sets ID3v1 Tags from an Audio MPEG.
 
 =head1 SYNOPSIS
 
@@ -398,8 +399,13 @@ foreach (sort $mp3_file->tag) {
 
 =head1 AUTHOR
 
-Sander van Zoest E<lt>sander@mp3.comE<gt> with input from Matt Plummer,
-Mike Oliphant and Matt DiMeo.
+Sander van Zoest E<lt>sander@mp3.comE<gt>
+
+=head1 THANKS
+
+Matt Plummer E<lt>matt@mp3.comE<gt>, Mike Oliphant E<lt>oliphant@gtk.orgE<gt>, 
+Matt DiMeo E<lt>mattd@mp3.comE<gt>, Olaf Maetzner, Jason Bodnar and Peter
+Johansson
 
 =head1 COPYRIGHT
 

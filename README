@@ -1,5 +1,6 @@
 This is the perl5 MPEG::ID3v1Tag module.
 
+
 To install this module you will need access rights to the perl
 install action on your system, as it overwrites your currently installed
 version of MPEG::ID3v1Tag.
@@ -16,5 +17,14 @@ To build and install this module type:
  make
  make install
 
+For an OOP perl module that reads ID3v2 tags, please see Matt DiMeo's
+MPEG::ID3v2Tag package.
+
+If you have any issues with this module, feel free to relay them to me.
+I am not actively developing on this anymore, but do plan on making
+bug fix releases. Any patches for features or bug fixes will be appreciated.
+
 Sander van Zoest <sander@mp3.com>
 MP3.com, Inc.
+
+$Id: README,v 2.5 2000/01/28 01:54:39 sander Exp $

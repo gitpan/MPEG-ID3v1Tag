@@ -1,6 +1,6 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# $Id: Makefile.PL,v 1.1.1.1 1999/12/29 22:19:31 sander Exp $
-# $Source: /cvsroot/perl/modules/id3v1/Makefile.PL,v $
+# $Id: Makefile.PL,v 2.5 2000/01/28 01:09:17 sander Exp $
+# $Source: /cvsroot/tools/id3v1/Makefile.PL,v $
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 require 5.004;
@@ -10,9 +10,9 @@ use ExtUtils::MakeMaker;
 $| = 1;
 my $missing_modules = 0;
 
-print "Checking for IO::Socket....";
+print "Checking for IO::File....";
 eval {
-   require IO::Socket;
+   require IO::File;
 };
 if ($@) {
    print " failed\n";
