@@ -1,0 +1,4 @@
+MANIFEST
+Makefile.PL
+README
+lib/MPEG/ID3v1Tag.pm
